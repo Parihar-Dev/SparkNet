@@ -1,0 +1,17 @@
+{
+  "name": "sparknet-contract",
+  "version": "1.0.0",
+  "description": "This repository uses the recommended structure for a Soroban project: ```text . ├── contracts │   └── hello_world │       ├── src │       │   ├── lib.rs │       │   └── test.rs │       └── Cargo.toml ├── Cargo.toml └── README.md ```",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Rahul Parihar",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "soroban-client": "^1.0.1"
+  }
+}
