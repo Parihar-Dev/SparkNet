@@ -1,25 +1,64 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Cpu, Battery } from "lucide-react";
 import heroBackground from "@/assets/hero-bg.jpg";
+import Spline from '@splinetool/react-spline';
+
+import Hyperspeed from './Hyperspeed';
+
+// the component will fill the height/width of its parent container, edit the CSS to change this
+// the options below are the default values
+
+
 
 const Hero = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
       {/* Background */}
-      <div className="absolute inset-0 z-0">
-        <img 
-          src={heroBackground} 
-          alt="Decentralized Network" 
-          className="w-full h-full object-cover opacity-30"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/90 to-background"></div>
-      </div>
+     <Hyperspeed
+  effectOptions={{
+    onSpeedUp: () => { },
+    onSlowDown: () => { },
+    distortion: 'turbulentDistortion',
+    length: 400,
+    roadWidth: 10,
+    islandWidth: 2,
+    lanesPerRoad: 4,
+    fov: 90,
+    fovSpeedUp: 150,
+    speedUp: 2,
+    carLightsFade: 0.4,
+    totalSideLightSticks: 20,
+    lightPairsPerRoadWay: 40,
+    shoulderLinesWidthPercentage: 0.05,
+    brokenLinesWidthPercentage: 0.1,
+    brokenLinesLengthPercentage: 0.5,
+    lightStickWidth: [0.12, 0.5],
+    lightStickHeight: [1.3, 1.7],
+    movingAwaySpeed: [60, 80],
+    movingCloserSpeed: [-120, -160],
+    carLightsLength: [400 * 0.03, 400 * 0.2],
+    carLightsRadius: [0.05, 0.14],
+    carWidthPercentage: [0.3, 0.5],
+    carShiftX: [-0.8, 0.8],
+    carFloorSeparation: [0, 5],
+    colors: {
+      roadColor: 0x080808,
+      islandColor: 0x0a0a0a,
+      background: 0x000000,
+      shoulderLines: 0xFFFFFF,
+      brokenLines: 0xFFFFFF,
+      leftCars: [0xD856BF, 0x6750A2, 0xC247AC],
+      rightCars: [0x03B3C3, 0x0E5EA5, 0x324555],
+      sticks: 0x03B3C3,
+    }
+  }}
+/>
 
       {/* Animated Background Elements */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
+      {/* <div className="absolute inset-0 z-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      </div>
+      </div> */}
 
       {/* Content */}
       <div className="container mx-auto px-6 z-10 ">
@@ -38,7 +77,7 @@ const Hero = () => {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16 animate-fade-in delay-300">
             <Button className="gradient-primary text-background font-semibold px-8 py-6 text-lg shadow-glow-primary hover:scale-105 transition-transform">
-              Start Earning Now
+              Start Renting Now
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button variant="outline" className="border-primary/50 text-foreground hover:bg-primary/10 px-8 py-6 text-lg">
