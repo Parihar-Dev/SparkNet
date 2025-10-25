@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Cpu, Zap } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Navbar = () => {
   return (
@@ -9,9 +10,8 @@ const Navbar = () => {
           <div className="flex items-center space-x-2">
             <div className="relative">
               <Zap className="h-8 w-8 text-primary" fill="currentColor" />
-              <Cpu className="h-4 w-4 text-secondary absolute -bottom-1 -right-1" />
             </div>
-            <span className="text-2xl font-bold text-gradient-primary">EnergyShare</span>
+            <span className="text-2xl font-bold text-gradient-primary">SparkNet</span>
           </div>
           
           <div className="hidden md:flex items-center space-x-8">
@@ -22,12 +22,11 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" className="text-foreground hover:text-primary">
-              Connect Wallet
-            </Button>
-            <Button className="gradient-primary text-background font-semibold shadow-glow-primary">
-              Get Started
-            </Button>
+            <Link to="/connect-wallet">
+              <Button variant="ghost" className="gradient-primary text-background font-semibold shadow-glow-primary">
+                Connect Wallet
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

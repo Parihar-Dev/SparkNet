@@ -48,7 +48,7 @@ const Features = () => {
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-black mb-4">
-            Why Choose <span className="text-gradient-primary">EnergyShare</span>
+            Why Choose <span className="text-gradient-primary">SparkNet</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             A revolutionary platform combining compute power and renewable energy in one decentralized marketplace
