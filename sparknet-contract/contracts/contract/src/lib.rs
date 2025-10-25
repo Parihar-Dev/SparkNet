@@ -281,3 +281,6 @@ impl SparkNetContract {
             .unwrap_or_else(|| panic_with_error!(env, ContractError::NotInitialized))
     }
 }
+
+#[cfg(test)]
+mod test;
