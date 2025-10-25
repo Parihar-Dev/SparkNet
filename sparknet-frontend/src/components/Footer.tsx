@@ -14,7 +14,7 @@ const Footer = () => {
                 <Zap className="h-8 w-8 text-primary" fill="currentColor" />
                 <Cpu className="h-4 w-4 text-secondary absolute -bottom-1 -right-1" />
               </div>
-              <span className="text-2xl font-bold text-gradient-primary">EnergyShare</span>
+              <span className="text-2xl font-bold text-gradient-primary">SparkNet</span>
             </div>
             <p className="text-muted-foreground mb-4 max-w-sm">
               The world's first decentralized marketplace for compute power and renewable energy sharing.
@@ -56,7 +56,7 @@ const Footer = () => {
 
         <div className="border-t border-border/50 pt-8 flex flex-col md:flex-row items-center justify-between">
           <p className="text-muted-foreground text-sm">
-            © 2025 EnergyShare. All rights reserved.
+            © 2025 SparkNet. All rights reserved.
           </p>
           <div className="flex items-center space-x-6 text-sm text-muted-foreground mt-4 md:mt-0">
             <a href="#" className="hover:text-primary transition-colors">Privacy Policy</a>

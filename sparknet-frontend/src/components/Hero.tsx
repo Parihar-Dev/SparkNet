@@ -22,19 +22,16 @@ const Hero = () => {
       </div>
 
       {/* Content */}
-      <div className="container mx-auto px-6 z-10">
-        <div className="text-center max-w-5xl mx-auto">
-          <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full glass-effect mb-8 animate-fade-in">
-            <span className="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
-            <span className="text-sm text-muted-foreground">Powered by Blockchain Technology</span>
-          </div>
+      <div className="container mx-auto px-6 z-10 ">
+        <div className="text-center max-w-5xl mx-auto ">
 
-          <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight animate-fade-in delay-100">
-            Decentralized Compute &{" "}
-            <span className="text-gradient-primary">Energy Marketplace</span>
+          <h1 className="text-5xl md:text-7xl font-semibold mb-6 leading-tight animate-fade-in delay-100">
+            Decentralized Compute {" "}
+            <span>Marketplace</span>
+            <div>Built on Stellar</div>
           </h1>
 
-          <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto animate-fade-in delay-200">
+          <p className="text-base md:text-lg text-muted-foreground mb-12 max-w-3xl mx-auto animate-fade-in delay-200">
             Rent out your idle GPU/CPU power and stored green energy. 
             Earn crypto rewards while contributing to a sustainable, decentralized future.
           </p>
