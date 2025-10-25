@@ -135,9 +135,11 @@ impl SparkNetContract {
         let token_address = Self::get_token_address(&env);
         let token_client = token::Client::new(&env, &token_address);
         
-        token_client.transfer(
-            &consumer_address, 
-            &env.current_contract_address(), 
+        // THE CORRECTED CODE
+        token_client.transfer_from(
+            &env.current_contract_address(), // spender: this contract
+            &consumer_address,               // from: consumer
+            &env.current_contract_address(), // to: this contract (escrow)
             &(total_cost as i128)
         );
 
