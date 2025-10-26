@@ -12,6 +12,6 @@ export const TOKEN_ID = "CBWQ6LFWPSXVJ67AWV6222OWGS5LIGC6OCR3KQHZ2T4IDXJNVSUBRIU
 
 // 3. RPC URL
 //    We'll use the public Futurenet RPC
-export const RPC_URL = 'https://rpc.testnet.stellar.org';
+export const RPC_URL = 'https://soroban-testnet.stellar.org';
 
 export const NETWORK_PASSPHRASE = "Test SDF Future Network ; October 2022";
