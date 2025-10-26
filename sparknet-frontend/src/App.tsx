@@ -8,6 +8,7 @@ import ConnectWallet from "./pages/ConnectWallet";
 import NotFound from "./pages/NotFound";
 import RegisterPage from "./pages/RegisterPage";
 import { WalletProvider } from "./contexts/WalletContext"; // 1. IMPORT YOUR CONTEXT
+import Marketplace from "./components/Marketplace";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/connect-wallet" element={<ConnectWallet />} />
             <Route path="/register-provider" element={<RegisterPage />} />
+            <Route path="/marketplace" element={<Marketplace />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

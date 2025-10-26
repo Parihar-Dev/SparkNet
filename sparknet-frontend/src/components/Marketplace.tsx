@@ -1,7 +1,12 @@
 import { useWallet } from "@/contexts/WalletContext";
-import { writeContract } from "@/lib/soroban";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+// Import all necessary contract functions and the CONTRACT_ID
+import { writeContract, writeTokenContract, readContract } from "@/lib/soroban";
+import { CONTRACT_ID } from "@/lib/constants";
+import { stroopsToXLM } from "@/lib/utils"; // Import the utility function
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { fetchProviders } from "@/lib/marketplace";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -11,25 +16,19 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Cpu, Gauge, Clock, AlertTriangle } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { readContract } from "@/lib/soroban";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// NOTE: If you are using 'react-router-dom' or similar, you should uncomment 
+// the following line and use the navigate function inside onSuccess.
+// import { useNavigate } from "react-router-dom"; 
+
 // DEFINE: The types from our contract
-// (Make sure these match lib.rs)
 interface Provider {
   id: string; // Soroban SDK converts Address to string
-  gpu_model: string;
-  price_per_hour: bigint; // Soroban SDK converts u128 to bigint
-  registered_at: bigint;
+  gpuModel: string;
+  pricePerHour: bigint; // Soroban SDK converts u128 to bigint
+  // Assuming a status field might exist, but we will use the contract data as is
 }
-
-// HELPER: Function to format price
-// The contract stores price in stroops (10^7)
-const formatPrice = (price: bigint): string => {
-  // Use Number for simple division, as bigint doesn't support decimals
-  return (Number(price) / 10_000_000).toFixed(7);
-};
 
 // HELPER: Separate component for loading state
 const MarketplaceSkeleton = () => (
@@ -64,41 +63,71 @@ const MarketplaceSkeleton = () => (
 );
 
 const Marketplace = () => {
-  // FETCH DATA: Use react-query to call our readContract helper
+  const navigate = useNavigate();
   const { publicKey } = useWallet();
   const queryClient = useQueryClient();
-  const {
-    data: providers,
-    isLoading,
-    error,
-  } = useQuery<Provider[]>({
+  // const navigate = useNavigate(); // UNCOMMENT if using react-router-dom
+
+  // QUERY: Fetch the list of registered providers
+  const { data: providers, isLoading, error } = useQuery({
     queryKey: ["providers"],
-    queryFn: () => readContract("get_providers"),
+    queryFn: fetchProviders,
   });
 
-  // MUTATION: For calling the 'rent_gpu' contract function
+  // MUTATION: For calling the two-step rental process
   const rentMutation = useMutation({
-    mutationFn: ({ providerId, duration }: { providerId: string; duration: number }) => {
+    mutationFn: async ({ provider, duration }: { provider: Provider; duration: number }) => {
       if (!publicKey) throw new Error("Wallet not connected");
-      
-      // Get arguments for the contract function
-      const consumer_address = publicKey;
-      const provider_address = providerId;
-      const duration_hours = BigInt(duration); // Contract expects u64
 
-      return writeContract("rent_gpu", [consumer_address, provider_address, duration_hours], publicKey);
+      const consumer_address = publicKey;
+      const provider_address = provider.id;
+      const duration_hours = BigInt(duration);
+      
+      // --- STEP 1: CALCULATE COST AND APPROVE TOKEN SPENDING ---
+      
+      // Calculate total cost in stroops (price_per_hour is already BigInt)
+      const totalCostInStroops = provider.pricePerHour * duration_hours;
+      
+      // The SparkNet contract is the spender (it pulls tokens from the consumer)
+      const approveArgs = [
+        consumer_address,
+        CONTRACT_ID, // The SparkNet contract is the spender
+        totalCostInStroops,
+      ];
+
+      toast.info("Step 1 of 2: Approving tokens for rental...");
+      
+      // Call the `approve` function on the standard asset (token) contract
+      await writeTokenContract("approve", approveArgs, publicKey);
+      
+      // --- STEP 2: CALL THE MAIN CONTRACT'S RENT FUNCTION ---
+
+      toast.info("Step 2 of 2: Initiating GPU rental...");
+
+      // Contract args: consumer_address, provider_address, duration_hours
+      const rentArgs = [consumer_address, provider_address, duration_hours];
+
+      // Call the `rent_gpu` function on the main SparkNet contract
+      return writeContract("rent_gpu", rentArgs, publicKey);
     },
     onSuccess: () => {
-      toast.success("Rental successful! Check your dashboard.");
-      // Invalidate the rentals query to refetch data on other pages
+      toast.success("Rental successful! Your job is now active.");
+      
+      // Invalidate queries to ensure dashboard and marketplace views are updated
       queryClient.invalidateQueries({ queryKey: ["rentals", publicKey] });
+      queryClient.invalidateQueries({ queryKey: ["providers"] });
+      navigate('/dashboard');
+      console.log("SUCCESS: Rental complete. Navigate the user to the dashboard to see their active job.");
+
     },
     onError: (e: Error) => {
+      // Use e.message for a cleaner error display
       toast.error(`Rental failed: ${e.message}`);
     }
   });
 
-  // RENDER: Header and background
+
+  // RENDER: Header and main content
   return (
     <section id="marketplace" className="py-24 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-secondary/5 to-background"></div>
@@ -143,7 +172,7 @@ const Marketplace = () => {
                     <Cpu className="h-7 w-7 text-background" />
                   </div>
                   <span className="px-3 py-1 rounded-full glass-effect text-sm text-primary border border-primary/30">
-                    Live
+                    Live ({providers.length})
                   </span>
                 </div>
                 <CardTitle className="text-2xl">Compute Power</CardTitle>
@@ -169,12 +198,13 @@ const Marketplace = () => {
                       >
                         <div className="flex-1 mb-4 sm:mb-0">
                           <div className="font-semibold mb-1">
-                            {provider.gpu_model}
+                            {provider.gpuModel}
                           </div>
                           <div className="text-sm text-muted-foreground flex items-center space-x-2">
                             <Clock className="h-3 w-3" />
                             <span>
-                              {formatPrice(provider.price_per_hour)} XLM/hour
+                              {/* Use the imported utility function */}
+                              {stroopsToXLM(provider.pricePerHour)} XLM/hour
                             </span>
                           </div>
                           <div className="text-xs text-muted-foreground font-mono break-all pt-1">
@@ -185,7 +215,6 @@ const Marketplace = () => {
                           <div className="text-right flex-1 sm:flex-auto">
                             <div className="flex items-center space-x-1 text-sm justify-end">
                               <Gauge className="h-3 w-3 text-secondary" />
-                              {/* We don't have availability % in contract, so hardcode for now */}
                               <span className="text-secondary font-semibold">
                                 100%
                               </span>
@@ -195,20 +224,18 @@ const Marketplace = () => {
                             </div>
                           </div>
                           
-                          {/* --- THIS IS THE MODIFIED BUTTON --- */}
                           <Button
                             size="sm"
                             className="gradient-primary text-background w-24"
                             onClick={() => {
-                              // Hardcoding 1 hour for simplicity.
-                              // In a real app, you'd use a modal to ask for the duration.
-                              rentMutation.mutate({ providerId: provider.id, duration: 1 });
+                              // Hardcoding 1 hour for simplicity. 
+                              // Pass the full provider object to the mutation for cost calculation
+                              rentMutation.mutate({ provider: provider, duration: 1 });
                             }}
                             disabled={rentMutation.isPending || !publicKey}
                           >
                             {rentMutation.isPending ? "Renting..." : "Rent"}
                           </Button>
-                          {/* --- END OF MODIFICATION --- */}
 
                         </div>
                       </div>
