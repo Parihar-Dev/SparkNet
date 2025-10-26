@@ -1,8 +1,14 @@
 // src/lib/soroban.ts
 
-import Server, { scValToNative, nativeToScVal, Networks } from '@stellar/stellar-sdk';
+import Server, { scValToNative, nativeToScVal } from '@stellar/stellar-sdk';
 import { signTransaction } from '@stellar/freighter-api';
-import { CONTRACT_ID, RPC_URL, NETWORK_PASSPHRASE } from './constants';
+// Make sure to add TOKEN_CONTRACT_ID to your constants file!
+import {
+  CONTRACT_ID,
+  TOKEN_ID,
+  RPC_URL,
+  NETWORK_PASSPHRASE,
+} from './constants';
 
 // Initialize the Soroban RPC server
 const server = new Server(RPC_URL, {
@@ -21,7 +27,7 @@ export const readContract = async (method: string, args: any[] = []) => {
 
     // Simulate the transaction
     const simulation = await server.simulateTransaction({
-      source: CONTRACT_ID,
+      source: CONTRACT_ID, // Source can be the contract itself for read-only
       contractId: CONTRACT_ID,
       method,
       args: scValArgs,
@@ -41,7 +47,7 @@ export const readContract = async (method: string, args: any[] = []) => {
 };
 
 /**
- * Signs and submits a transaction to a writable contract function.
+ * Signs and submits a transaction to your main SparkNet contract.
  * @param method The contract function name
  * @param args Array of arguments
  * @param publicKey The user's public key signing the transaction
@@ -57,7 +63,7 @@ export const writeContract = async (
     // Simulate the transaction to get XDR
     const simulation = await server.simulateTransaction({
       source: publicKey,
-      contractId: CONTRACT_ID,
+      contractId: CONTRACT_ID, // <-- This targets your main contract
       method,
       args: scValArgs,
     });
@@ -96,5 +102,66 @@ export const writeContract = async (
   } catch (e: any) {
     console.error(`Error writing contract (${method}):`, e);
     throw new Error(e.message || 'Failed to write contract');
+  }
+};
+
+/**
+ * Signs and submits a transaction to the TOKEN contract.
+ * Used for 'approve' calls.
+ * @param method The contract function name (e.g., "approve")
+ * @param args Array of arguments
+ * @param publicKey The user's public key signing the transaction
+ */
+export const writeTokenContract = async (
+  method: string,
+  args: any[],
+  publicKey: string
+) => {
+  try {
+    const scValArgs = args.map((arg) => nativeToScVal(arg));
+
+    // Simulate the transaction to get XDR
+    const simulation = await server.simulateTransaction({
+      source: publicKey,
+      contractId: TOKEN_ID, // <-- This targets the TOKEN contract
+      method,
+      args: scValArgs,
+    });
+
+    if (!simulation.xdr) {
+      throw new Error(simulation.error || 'Simulation failed to produce XDR.');
+    }
+
+    // Sign the transaction using Freighter
+    const signedXdr = await signTransaction(simulation.xdr, {
+      networkPassphrase: NETWORK_PASSPHRASE,
+    });
+
+    // Submit the signed transaction
+    const sendResult = await server.sendTransaction(signedXdr);
+
+    if (sendResult.status === 'ERROR' || sendResult.status === 'REJECTED') {
+      throw new Error(sendResult.error || 'Transaction was rejected.');
+    }
+
+    // Poll for transaction completion
+    let txResult = await server.getTransaction(sendResult.hash);
+    const startTime = Date.now();
+    while (txResult.status === 'PENDING' && Date.now() - startTime < 15000) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      txResult = await server.getTransaction(sendResult.hash);
+    }
+
+    if (txResult.status !== 'SUCCESS') {
+      throw new Error(txResult.error || 'Transaction failed or timed out.');
+    }
+
+    return txResult.result
+      ? scValToNative(txResult.result.retval)
+      : 'Success (no return value)';
+  } catch (e: any) {
+    // Updated error message for clarity
+    console.error(`Error writing TOKEN contract (${method}):`, e);
+    throw new Error(e.message || 'Failed to write token contract');
   }
 };

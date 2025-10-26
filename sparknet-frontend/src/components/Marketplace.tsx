@@ -1,3 +1,7 @@
+import { useWallet } from "@/contexts/WalletContext";
+import { writeContract } from "@/lib/soroban";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -7,11 +11,11 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Cpu, Gauge, Clock, AlertTriangle } from "lucide-react";
-import { useQuery } from "@tanstack/react-query"; // 1. IMPORT useQuery
-import { readContract } from "@/lib/soroban"; // 2. IMPORT our helper
-import { Skeleton } from "@/components/ui/skeleton"; // 3. IMPORT Skeleton for loading
+import { useQuery } from "@tanstack/react-query";
+import { readContract } from "@/lib/soroban";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// 4. DEFINE: The types from our contract
+// DEFINE: The types from our contract
 // (Make sure these match lib.rs)
 interface Provider {
   id: string; // Soroban SDK converts Address to string
@@ -20,14 +24,14 @@ interface Provider {
   registered_at: bigint;
 }
 
-// 5. HELPER: Function to format price
-//    The contract stores price in stroops (10^7)
+// HELPER: Function to format price
+// The contract stores price in stroops (10^7)
 const formatPrice = (price: bigint): string => {
   // Use Number for simple division, as bigint doesn't support decimals
   return (Number(price) / 10_000_000).toFixed(7);
 };
 
-// 6. HELPER: Separate component for loading state
+// HELPER: Separate component for loading state
 const MarketplaceSkeleton = () => (
   <div className="grid grid-cols-1 gap-8 max-w-4xl mx-auto">
     <Card className="glass-effect border-border/50">
@@ -59,10 +63,10 @@ const MarketplaceSkeleton = () => (
   </div>
 );
 
-// 7. REMOVE: The static `offerings` array from your original file
-
 const Marketplace = () => {
-  // 8. FETCH DATA: Use react-query to call our readContract helper
+  // FETCH DATA: Use react-query to call our readContract helper
+  const { publicKey } = useWallet();
+  const queryClient = useQueryClient();
   const {
     data: providers,
     isLoading,
@@ -72,7 +76,29 @@ const Marketplace = () => {
     queryFn: () => readContract("get_providers"),
   });
 
-  // 9. RENDER: Header and background
+  // MUTATION: For calling the 'rent_gpu' contract function
+  const rentMutation = useMutation({
+    mutationFn: ({ providerId, duration }: { providerId: string; duration: number }) => {
+      if (!publicKey) throw new Error("Wallet not connected");
+      
+      // Get arguments for the contract function
+      const consumer_address = publicKey;
+      const provider_address = providerId;
+      const duration_hours = BigInt(duration); // Contract expects u64
+
+      return writeContract("rent_gpu", [consumer_address, provider_address, duration_hours], publicKey);
+    },
+    onSuccess: () => {
+      toast.success("Rental successful! Check your dashboard.");
+      // Invalidate the rentals query to refetch data on other pages
+      queryClient.invalidateQueries({ queryKey: ["rentals", publicKey] });
+    },
+    onError: (e: Error) => {
+      toast.error(`Rental failed: ${e.message}`);
+    }
+  });
+
+  // RENDER: Header and background
   return (
     <section id="marketplace" className="py-24 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-background via-secondary/5 to-background"></div>
@@ -87,10 +113,10 @@ const Marketplace = () => {
           </p>
         </div>
 
-        {/* 10. HANDLE LOADING STATE */}
+        {/* HANDLE LOADING STATE */}
         {isLoading && <MarketplaceSkeleton />}
 
-        {/* 11. HANDLE ERROR STATE */}
+        {/* HANDLE ERROR STATE */}
         {error && (
           <div className="max-w-4xl mx-auto">
             <Card className="glass-effect border-destructive/50">
@@ -107,7 +133,7 @@ const Marketplace = () => {
           </div>
         )}
 
-        {/* 12. HANDLE SUCCESS & EMPTY STATE */}
+        {/* HANDLE SUCCESS & EMPTY STATE */}
         {providers && (
           <div className="grid grid-cols-1 gap-8 max-w-4xl mx-auto">
             <Card className="glass-effect border-border/50 hover:border-primary/50 transition-all hover:shadow-glow-primary">
@@ -126,7 +152,7 @@ const Marketplace = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* 13. HANDLE EMPTY STATE */}
+                {/* HANDLE EMPTY STATE */}
                 {providers.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground">
@@ -134,7 +160,7 @@ const Marketplace = () => {
                     </p>
                   </div>
                 ) : (
-                  /* 14. MAP OVER LIVE `providers` DATA */
+                  /* MAP OVER LIVE `providers` DATA */
                   <div className="space-y-4">
                     {providers.map((provider) => (
                       <div
@@ -147,7 +173,6 @@ const Marketplace = () => {
                           </div>
                           <div className="text-sm text-muted-foreground flex items-center space-x-2">
                             <Clock className="h-3 w-3" />
-                            {/* 15. FIX CURRENCY: Use helper and show XLM */}
                             <span>
                               {formatPrice(provider.price_per_hour)} XLM/hour
                             </span>
@@ -169,21 +194,29 @@ const Marketplace = () => {
                               Available
                             </div>
                           </div>
+                          
+                          {/* --- THIS IS THE MODIFIED BUTTON --- */}
                           <Button
                             size="sm"
                             className="gradient-primary text-background w-24"
+                            onClick={() => {
+                              // Hardcoding 1 hour for simplicity.
+                              // In a real app, you'd use a modal to ask for the duration.
+                              rentMutation.mutate({ providerId: provider.id, duration: 1 });
+                            }}
+                            disabled={rentMutation.isPending || !publicKey}
                           >
-                            Rent
+                            {rentMutation.isPending ? "Renting..." : "Rent"}
                           </Button>
+                          {/* --- END OF MODIFICATION --- */}
+
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
-                {/* We can remove the "View All" button for now */}
               </CardContent>
             </Card>
-            {/* You can add the "Green Energy" card back later if needed */}
           </div>
         )}
       </div>
