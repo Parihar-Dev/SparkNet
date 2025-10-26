@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { fetchProviders } from "@/lib/marketplace";
 import {
   Card,
   CardContent,
@@ -22,14 +23,11 @@ const RegisterProvider = () => {
   const [price, setPrice] = useState("");
 
   const registerMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!publicKey) throw new Error("Wallet not connected");
 
-      // Convert price from XLM (string) to stroops (bigint)
       const priceInStroops = BigInt(parseFloat(price) * 10_000_000);
-      if (priceInStroops <= 0) {
-        throw new Error("Price must be greater than 0");
-      }
+      if (priceInStroops <= 0) throw new Error("Price must be greater than 0");
 
       // Contract args: provider_address, gpu_model, price_per_hour
       return writeContract(
@@ -40,13 +38,12 @@ const RegisterProvider = () => {
     },
     onSuccess: () => {
       toast.success("Provider registered successfully!");
-      // Refetch the providers list to update the marketplace
       queryClient.invalidateQueries({ queryKey: ["providers"] });
       setGpuModel("");
       setPrice("");
     },
-    onError: (e: Error) => {
-      toast.error(`Registration failed: ${e.message}`);
+    onError: (err: Error) => {
+      toast.error(`Registration failed: ${err.message}`);
     },
   });
 
@@ -85,7 +82,7 @@ const RegisterProvider = () => {
               id="price"
               type="number"
               step="0.1"
-              min="0.0000001"
+              min="0.1"
               placeholder="e.g., 2.5"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
@@ -97,9 +94,7 @@ const RegisterProvider = () => {
             className="w-full gradient-primary text-background"
             disabled={!publicKey || !gpuModel || !price || registerMutation.isPending}
           >
-            {registerMutation.isPending
-              ? "Registering..."
-              : "Register GPU"}
+            {registerMutation.isPending ? "Registering..." : "Register GPU"}
           </Button>
           {!publicKey && (
             <p className="text-center text-sm text-destructive mt-3">
@@ -113,4 +108,3 @@ const RegisterProvider = () => {
 };
 
 export default RegisterProvider;
-

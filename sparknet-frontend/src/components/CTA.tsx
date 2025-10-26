@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const CTA = () => {
+
+  const navigate = useNavigate();
   return (
     <section className="py-24 relative overflow-hidden">
       <div className="absolute inset-0 gradient-primary opacity-10"></div>
@@ -24,7 +27,10 @@ const CTA = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button className="gradient-primary text-background font-semibold px-8 py-6 text-lg shadow-glow-primary hover:scale-105 transition-transform">
+              <Button 
+                className="gradient-primary text-background font-semibold px-8 py-6 text-lg shadow-glow-primary hover:scale-105 transition-transform"
+                onClick={() => navigate("/register-provider")}
+              >
                 Become a Provider
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
